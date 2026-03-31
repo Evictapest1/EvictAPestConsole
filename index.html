@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Evict-A-Pest | Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #e63329;
+  --red-dark: #b01f18;
+  --red-glow: rgba(230,51,41,0.15);
+  --dark: #111111;
+  --dark2: #1a1a1a;
+  --dark3: #242424;
+  --dark4: #2e2e2e;
+  --light: #f4f4f4;
+  --border: rgba(255,255,255,0.08);
+  --text: #ffffff;
+  --text-dim: rgba(255,255,255,0.5);
+  --text-dimmer: rgba(255,255,255,0.25);
+  --card-bg: rgba(255,255,255,0.04);
+  --sidebar-w: 260px;
+  --sidebar-w-collapsed: 68px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(--text); }
+
+/* ── LOGIN ─────────────────────────────────────────────── */
+#loginScreen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: radial-gradient(ellipse at 30% 50%, #2a0a09 0%, #111 50%, #0a0a0a 100%);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.login-panel {
+  width: 100%; max-width: 400px;
+  animation: loginFade 0.6s ease both;
+}
+@keyframes loginFade { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+.login-logo {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 48px; gap: 8px;
+}
+.login-logo img { height: 72px; object-fit: contain; }
+.login-logo-sub {
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-dimmer); font-weight: 600;
+}
+.login-logo-line {
+  width: 40px; height: 1px; background: var(--red); margin: 4px auto 0;
+}
+
+.login-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; text-align: center; }
+.login-sub { font-size: 13px; color: var(--text-dim); text-align: center; margin-bottom: 32px; }
+
+.login-field { margin-bottom: 14px; }
+.login-field label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; display: block; margin-bottom: 6px; }
+.login-field input {
+  width: 100%; padding: 14px 16px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06);
+  color: #fff; font-size: 15px; font-family: 'DM Sans',sans-serif;
+  outline: none; transition: border 0.2s, background 0.2s;
+}
+.login-field input:focus { border-color: var(--red); background: rgba(255,255,255,0.09); }
+.login-field input::placeholder { color: rgba(255,255,255,0.2); }
+
+.login-btn {
+  width: 100%; padding: 16px; border-radius: 12px; border: none;
+  background: var(--red); color: #fff; font-size: 16px; font-weight: 700;
+  font-family: 'DM Sans',sans-serif; cursor: pointer; margin-top: 8px;
+  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 4px 24px rgba(230,51,41,0.4);
+}
+.login-btn:hover { background: #c92d23; }
+.login-btn:active { transform: scale(0.98); }
+.login-error { color: #f87171; font-size: 13px; margin-top: 10px; text-align: center; min-height: 20px; }
+.login-hint { font-size: 12px; color: var(--text-dimmer); text-align: center; margin-top: 20px; }
+
+/* ── APP SHELL ─────────────────────────────────────────── */
+#appShell { display: none; height: 100vh; }
+#appShell.active { display: flex; }
+
+/* ── SIDEBAR ───────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--dark2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transition: width 0.3s ease;
+  position: relative; z-index: 10;
+  overflow: hidden;
+}
+.sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+
+.sidebar-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.sidebar-logo { height: 36px; object-fit: contain; flex-shrink: 0; min-width: 36px; }
+.sidebar-logo-text { overflow: hidden; white-space: nowrap; }
+.sidebar-logo-text .name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: var(--red); letter-spacing: 0.05em; }
+.sidebar-logo-text .tagline { font-size: 10px; color: var(--text-dimmer); letter-spacing: 0.05em; margin-top: 1px; }
+
+.sidebar-user {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.user-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--red); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; flex-shrink: 0; letter-spacing: 0.05em;
+}
+.user-info { overflow: hidden; }
+.user-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 11px; color: var(--text-dimmer); }
+
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; overflow-x: hidden; }
+.sidebar-nav::-webkit-scrollbar { display: none; }
+
+.nav-section-label {
+  font-size: 10px; color: var(--text-dimmer); text-transform: uppercase;
+  letter-spacing: 0.12em; font-weight: 700; padding: 8px 10px 4px;
+  white-space: nowrap; overflow: hidden;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 10px; border-radius: 10px; cursor: pointer;
+  transition: all 0.15s; margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden;
+  position: relative;
+}
+.nav-item:hover { background: rgba(255,255,255,0.06); }
+.nav-item.active { background: var(--red-glow); }
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 60%; background: var(--red); border-radius: 0 2px 2px 0;
+}
+.nav-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+  background: rgba(255,255,255,0.05);
+  transition: background 0.15s;
+}
+.nav-item.active .nav-icon { background: rgba(230,51,41,0.2); }
+.nav-label { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.nav-item.active .nav-label { color: #fff; }
+.nav-badge {
+  margin-left: auto; background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700; border-radius: 99px;
+  min-width: 18px; height: 18px; display: flex; align-items: center;
+  justify-content: center; padding: 0 5px; flex-shrink: 0;
+}
+
+.sidebar-footer {
+  padding: 12px 8px; border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.sidebar-footer .nav-item { margin-bottom: 0; }
+
+.collapse-btn {
+  position: absolute; top: 50%; right: -12px; transform: translateY(-50%);
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--dark3); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 10px; color: var(--text-dim); z-index: 20;
+  transition: all 0.2s;
+}
+.collapse-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* ── MAIN CONTENT ──────────────────────────────────────── */
+.main {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; background: var(--dark);
+  min-width: 0;
+}
+
+.main-topbar {
+  height: 56px; flex-shrink: 0;
+  background: var(--dark2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 24px;
+  gap: 16px;
+}
+.topbar-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+.topbar-breadcrumb { font-size: 12px; color: var(--text-dimmer); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.topbar-time { font-size: 12px; color: var(--text-dimmer); font-variant-numeric: tabular-nums; }
+.topbar-status { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #4ade80; }
+.topbar-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: block; animation: pulse-green 2s infinite; }
+@keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.main-body { flex: 1; overflow: hidden; position: relative; }
+
+/* ── VIEWS ─────────────────────────────────────────────── */
+.view { position: absolute; inset: 0; display: none; overflow-y: auto; }
+.view.active { display: block; }
+
+/* iframe views */
+.iframe-view { position: absolute; inset: 0; display: none; }
+.iframe-view.active { display: block; }
+.iframe-view iframe { width: 100%; height: 100%; border: none; }
+
+/* ── DASHBOARD ─────────────────────────────────────────── */
+.dash { padding: 28px; }
+
+.dash-welcome {
+  margin-bottom: 28px;
+  background: linear-gradient(135deg, var(--dark3) 0%, var(--dark2) 100%);
+  border: 1px solid var(--border); border-radius: 18px;
+  padding: 24px 28px; position: relative; overflow: hidden;
+}
+.dash-welcome::before {
+  content: ''; position: absolute; right: -40px; top: -40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(230,51,41,0.12) 0%, transparent 70%);
+}
+.dash-welcome-eyebrow { font-size: 11px; color: var(--red); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; margin-bottom: 6px; }
+.dash-welcome-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+.dash-welcome-sub { font-size: 13px; color: var(--text-dim); }
+.dash-welcome-date { font-size: 12px; color: var(--text-dimmer); margin-top: 12px; }
+
+.dash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 24px; }
+@media (min-width: 900px) { .dash-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.stat-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+  animation: statFade 0.5s ease both;
+}
+.stat-card:hover { border-color: var(--red); background: var(--red-glow); transform: translateY(-2px); }
+@keyframes statFade { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.stat-card:nth-child(1){animation-delay:0.1s}
+.stat-card:nth-child(2){animation-delay:0.15s}
+.stat-card:nth-child(3){animation-delay:0.2s}
+.stat-card:nth-child(4){animation-delay:0.25s}
+
+.stat-icon { font-size: 24px; margin-bottom: 12px; }
+.stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.stat-sub { font-size: 12px; color: var(--text-dimmer); margin-top: 6px; }
+.stat-card .stat-arrow { position: absolute; bottom: 14px; right: 14px; color: var(--text-dimmer); font-size: 16px; transition: color 0.2s; }
+.stat-card:hover .stat-arrow { color: var(--red); }
+
+.dash-apps-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+
+.dash-apps { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (min-width: 900px) { .dash-apps { grid-template-columns: repeat(4, 1fr); } }
+
+.app-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 18px; padding: 20px; cursor: pointer;
+  transition: all 0.2s; text-align: center;
+  animation: statFade 0.5s ease both;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.app-card:hover { border-color: var(--red); background: var(--red-glow); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(230,51,41,0.15); }
+.app-card:nth-child(1){animation-delay:0.3s}
+.app-card:nth-child(2){animation-delay:0.35s}
+.app-card:nth-child(3){animation-delay:0.4s}
+.app-card:nth-child(4){animation-delay:0.45s}
+
+.app-card-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+}
+.app-card-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+.app-card-desc { font-size: 11px; color: var(--text-dimmer); line-height: 1.4; }
+.app-card-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+.app-card-status.live { background: rgba(74,222,128,0.15); color: #4ade80; }
+
+/* ── MOBILE SIDEBAR OVERLAY ────────────────────────────── */
+.sidebar-overlay { display: none; }
+@media (max-width: 768px) {
+  .sidebar { position: fixed; left: -100%; top: 0; bottom: 0; z-index: 100; transition: left 0.3s ease; width: 260px !important; }
+  .sidebar.mobile-open { left: 0; box-shadow: 4px 0 32px rgba(0,0,0,0.5); }
+  .sidebar-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .sidebar-overlay.show { opacity: 1; pointer-events: all; }
+  .collapse-btn { display: none; }
+  .main { width: 100%; }
+  .mobile-menu-btn { display: flex !important; }
+}
+
+.mobile-menu-btn {
+  display: none; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: rgba(255,255,255,0.08); border: none; color: #fff;
+  cursor: pointer; font-size: 18px;
+}
+
+/* ── LOADING IFRAME ────────────────────────────────────── */
+.iframe-loader {
+  position: absolute; inset: 0; background: var(--dark);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; z-index: 5; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.iframe-loader.hidden { opacity: 0; }
+.loader-dots { display: flex; gap: 8px; }
+.loader-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); animation: ldot 1.2s ease-in-out infinite; }
+.loader-dot:nth-child(2){animation-delay:.2s} .loader-dot:nth-child(3){animation-delay:.4s}
+@keyframes ldot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+.loader-text { font-size: 13px; color: var(--text-dimmer); }
+
+/* ── SCROLLBAR ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="loginScreen">
+  <div class="login-panel">
+    <div class="login-logo">
+      <img src="https://raw.githubusercontent.com/Evictapest1/JobScanner/main/Evict-A-Pest-transparent.png" alt="Evict-A-Pest">
+      <div class="login-logo-line"></div>
+      <div class="login-logo-sub">Field Operations Console</div>
+    </div>
+    <div class="login-title">Welcome Back</div>
+    <div class="login-sub">Sign in to access your tools</div>
+    <div class="login-field">
+      <label>Your Name</label>
+      <input id="loginName" placeholder="e.g. Brad" autocomplete="off">
+    </div>
+    <div class="login-field">
+      <label>PIN</label>
+      <input id="loginPin" type="password" inputmode="numeric" placeholder="••••••" maxlength="6">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-hint">First time? Any name + PIN creates your account.</div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ── -->
+<div id="appShell">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="collapse-btn" onclick="toggleSidebar()" id="collapseBtn">◀</div>
+
+    <div class="sidebar-header">
+      <img class="sidebar-logo" src="https://raw.githubusercontent.com/Evictapest1/JobScanner/main/Evict-A-Pest-transparent.png" alt="Evict-A-Pest">
+      <div class="sidebar-logo-text">
+        <div class="name">EVICT-A-PEST</div>
+        <div class="tagline">send your pests packing!</div>
+      </div>
+    </div>
+
+    <div class="sidebar-user" id="sidebarUser">
+      <div class="user-avatar" id="userAvatar">B</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Brad</div>
+        <div class="user-role">Pest Technician</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav-item active" onclick="navigate('dashboard')" id="nav-dashboard">
+        <div class="nav-icon">🏠</div>
+        <span class="nav-label">Dashboard</span>
+      </div>
+
+      <div class="nav-section-label" style="margin-top:8px">Tools</div>
+      <div class="nav-item" onclick="navigate('jobscanner')" id="nav-jobscanner">
+        <div class="nav-icon">📋</div>
+        <span class="nav-label">Job Scanner</span>
+      </div>
+      <div class="nav-item" onclick="navigate('termite')" id="nav-termite">
+        <div class="nav-icon">🔬</div>
+        <span class="nav-label">Termite Inspection</span>
+      </div>
+      <div class="nav-item" onclick="navigate('invoice')" id="nav-invoice">
+        <div class="nav-icon">📄</div>
+        <span class="nav-label">Pest Invoice</span>
+      </div>
+      <div class="nav-item" onclick="navigate('compliance')" id="nav-compliance">
+        <div class="nav-icon">🐀</div>
+        <span class="nav-label">Rodent Compliance</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="nav-item" onclick="doLogout()">
+        <div class="nav-icon">🚪</div>
+        <span class="nav-label">Sign Out</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="main-topbar">
+      <button class="mobile-menu-btn" onclick="openMobileSidebar()">☰</button>
+      <div>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-time" id="topbarTime"></div>
+        <div class="topbar-status">Live</div>
+      </div>
+    </div>
+
+    <div class="main-body">
+      <!-- Dashboard View -->
+      <div class="view active" id="view-dashboard">
+        <div class="dash">
+          <div class="dash-welcome">
+            <div class="dash-welcome-eyebrow">Good to have you back</div>
+            <div class="dash-welcome-title" id="welcomeTitle">Hello, Brad 👋</div>
+            <div class="dash-welcome-sub">Here's what's happening across your tools today.</div>
+            <div class="dash-welcome-date" id="welcomeDate"></div>
+          </div>
+
+          <!-- Stat cards -->
+          <div class="dash-grid">
+            <div class="stat-card" onclick="navigate('jobscanner')">
+              <div class="stat-icon">📋</div>
+              <div class="stat-value" id="stat-jobs">—</div>
+              <div class="stat-label">Jobs This Week</div>
+              <div class="stat-sub" id="stat-jobs-sub">Loading...</div>
+              <div class="stat-arrow">→</div>
+            </div>
+            <div class="stat-card" onclick="navigate('jobscanner')">
+              <div class="stat-icon">💰</div>
+              <div class="stat-value" id="stat-revenue">—</div>
+              <div class="stat-label">Week Revenue</div>
+              <div class="stat-sub" id="stat-revenue-sub">excl. GST</div>
+              <div class="stat-arrow">→</div>
+            </div>
+            <div class="stat-card" onclick="navigate('termite')">
+              <div class="stat-icon">🔬</div>
+              <div class="stat-value" id="stat-inspections">—</div>
+              <div class="stat-label">Inspections</div>
+              <div class="stat-sub" id="stat-inspections-sub">Loading...</div>
+              <div class="stat-arrow">→</div>
+            </div>
+            <div class="stat-card" onclick="navigate('compliance')">
+              <div class="stat-icon">⚠️</div>
+              <div class="stat-value" id="stat-overdue">—</div>
+              <div class="stat-label">Compliance Alerts</div>
+              <div class="stat-sub" id="stat-overdue-sub">Rodent program</div>
+              <div class="stat-arrow">→</div>
+            </div>
+          </div>
+
+          <!-- App launcher -->
+          <div class="dash-apps-title">Quick Launch</div>
+          <div class="dash-apps">
+            <div class="app-card" onclick="navigate('jobscanner')">
+              <div class="app-card-icon" style="background:rgba(230,51,41,0.15)">📋</div>
+              <div class="app-card-name">Job Scanner</div>
+              <div class="app-card-desc">Daily run sheets, field notes & reports</div>
+              <div class="app-card-status live">● Live</div>
+            </div>
+            <div class="app-card" onclick="navigate('termite')">
+              <div class="app-card-icon" style="background:rgba(59,130,246,0.15)">🔬</div>
+              <div class="app-card-name">Termite Inspection</div>
+              <div class="app-card-desc">AS 3660.2:2017 digital checksheet</div>
+              <div class="app-card-status live">● Live</div>
+            </div>
+            <div class="app-card" onclick="navigate('invoice')">
+              <div class="app-card-icon" style="background:rgba(74,222,128,0.15)">📄</div>
+              <div class="app-card-name">Pest Invoice</div>
+              <div class="app-card-desc">Treatment proposals & client sign-off</div>
+              <div class="app-card-status live">● Live</div>
+            </div>
+            <div class="app-card" onclick="navigate('compliance')">
+              <div class="app-card-icon" style="background:rgba(251,191,36,0.15)">🐀</div>
+              <div class="app-card-name">Rodent Compliance</div>
+              <div class="app-card-desc">APVMA SGAR monitoring & reports</div>
+              <div class="app-card-status live">● Live</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- iFrame Views -->
+      <div class="iframe-view" id="view-jobscanner">
+        <div class="iframe-loader" id="loader-jobscanner">
+          <div class="loader-dots"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
+          <div class="loader-text">Loading Job Scanner…</div>
+        </div>
+        <iframe id="iframe-jobscanner" src="" title="Job Scanner" onload="iframeLoaded('jobscanner')"></iframe>
+      </div>
+
+      <div class="iframe-view" id="view-termite">
+        <div class="iframe-loader" id="loader-termite">
+          <div class="loader-dots"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
+          <div class="loader-text">Loading Termite Inspection…</div>
+        </div>
+        <iframe id="iframe-termite" src="" title="Termite Inspection" onload="iframeLoaded('termite')"></iframe>
+      </div>
+
+      <div class="iframe-view" id="view-invoice">
+        <div class="iframe-loader" id="loader-invoice">
+          <div class="loader-dots"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
+          <div class="loader-text">Loading Pest Invoice…</div>
+        </div>
+        <iframe id="iframe-invoice" src="" title="Pest Invoice" onload="iframeLoaded('invoice')"></iframe>
+      </div>
+
+      <div class="iframe-view" id="view-compliance">
+        <div class="iframe-loader" id="loader-compliance">
+          <div class="loader-dots"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
+          <div class="loader-text">Loading Rodent Compliance…</div>
+        </div>
+        <iframe id="iframe-compliance" src="" title="Rodent Compliance" onload="iframeLoaded('compliance')"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────
+const APPS = {
+  jobscanner:  { url: 'https://job-scanner-drab.vercel.app/',        title: 'Job Scanner',         loaded: false },
+  termite:     { url: 'https://termite-inspection.vercel.app/',      title: 'Termite Inspection',  loaded: false },
+  invoice:     { url: 'https://evict-a-pest-form.vercel.app/',       title: 'Pest Invoice',        loaded: false },
+  compliance:  { url: 'https://evictapest.vercel.app/',              title: 'Rodent Compliance',   loaded: false },
+};
+
+const USERS = JSON.parse(localStorage.getItem('eap_console_users') || '{}');
+let currentUser = null;
+let currentView = 'dashboard';
+let sidebarCollapsed = false;
+
+// ── AUTH ────────────────────────────────────────────────────
+function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  const pin  = document.getElementById('loginPin').value.trim();
+  const err  = document.getElementById('loginError');
+
+  if (!name || !pin) { err.textContent = 'Please enter your name and PIN.'; return; }
+
+  if (USERS[name]) {
+    if (USERS[name] !== pin) { err.textContent = 'Incorrect PIN. Try again.'; return; }
+  } else {
+    USERS[name] = pin;
+    localStorage.setItem('eap_console_users', JSON.stringify(USERS));
+  }
+
+  currentUser = name;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  document.getElementById('appShell').classList.add('active');
+
+  // Set user info
+  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('userName').textContent = name;
+  document.getElementById('welcomeTitle').textContent = 'Hello, ' + name + ' 👋';
+
+  startClock();
+  loadDashboardStats();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appShell').classList.remove('active');
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPin').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+document.getElementById('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ── NAVIGATION ──────────────────────────────────────────────
+function navigate(view) {
+  // Hide all views
+  document.querySelectorAll('.view, .iframe-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  currentView = view;
+
+  // Show correct view
+  const viewEl = document.getElementById('view-' + view);
+  if (viewEl) viewEl.classList.add('active');
+
+  // Activate nav item
+  const navEl = document.getElementById('nav-' + view);
+  if (navEl) navEl.classList.add('active');
+
+  // Update topbar
+  document.getElementById('topbarTitle').textContent =
+    view === 'dashboard' ? 'Dashboard' : (APPS[view] ? APPS[view].title : view);
+
+  // Load iframe if not yet loaded
+  if (view !== 'dashboard' && APPS[view] && !APPS[view].loaded) {
+    const iframe = document.getElementById('iframe-' + view);
+    if (iframe && !iframe.src) {
+      iframe.src = APPS[view].url;
+    }
+  }
+
+  // Close mobile sidebar
+  closeMobileSidebar();
+
+  // Refresh stats on dashboard visit
+  if (view === 'dashboard') loadDashboardStats();
+}
+
+function iframeLoaded(app) {
+  APPS[app].loaded = true;
+  const loader = document.getElementById('loader-' + app);
+  if (loader) loader.classList.add('hidden');
+}
+
+// ── SIDEBAR ─────────────────────────────────────────────────
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('collapseBtn');
+  sidebar.classList.toggle('collapsed', sidebarCollapsed);
+  btn.textContent = sidebarCollapsed ? '▶' : '◀';
+}
+
+function openMobileSidebar() {
+  document.getElementById('sidebar').classList.add('mobile-open');
+  document.getElementById('sidebarOverlay').classList.add('show');
+}
+
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// ── CLOCK ───────────────────────────────────────────────────
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const h = now.getHours(); const m = String(now.getMinutes()).padStart(2,'0');
+    const time = (h>12?h-12:h||12)+':'+m+' '+(h>=12?'PM':'AM');
+    document.getElementById('topbarTime').textContent =
+      days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()] + ' · ' + time;
+    document.getElementById('welcomeDate').textContent =
+      days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+  }
+  tick(); setInterval(tick, 30000);
+}
+
+// ── DASHBOARD STATS ─────────────────────────────────────────
+function loadDashboardStats() {
+  // Job Scanner stats — read from localStorage
+  try {
+    const weekData = JSON.parse(localStorage.getItem('eap_week_' + currentUser) || '{}');
+    const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+    let totalJobs = 0, totalRevenue = 0, daysWorked = [];
+    DAYS.forEach(day => {
+      if (weekData[day] && weekData[day].jobs && weekData[day].jobs.length > 0) {
+        totalJobs += weekData[day].jobs.length;
+        totalRevenue += weekData[day].jobs.reduce((s,j) => s+(parseFloat(j.feeCharged)||0), 0);
+        daysWorked.push(day.slice(0,3));
+      }
+    });
+    document.getElementById('stat-jobs').textContent = totalJobs;
+    document.getElementById('stat-jobs-sub').textContent = daysWorked.length > 0 ? daysWorked.join(', ') : 'No jobs yet this week';
+    document.getElementById('stat-revenue').textContent = totalRevenue > 0 ? '$' + totalRevenue.toFixed(0) : '$0';
+  } catch(e) {
+    document.getElementById('stat-jobs').textContent = '0';
+    document.getElementById('stat-revenue').textContent = '$0';
+  }
+
+  // Termite inspections — count saved inspections
+  try {
+    const termiteData = JSON.parse(localStorage.getItem('termite_inspection') || '{}');
+    const hasData = termiteData.fields && termiteData.fields.clientName;
+    document.getElementById('stat-inspections').textContent = hasData ? '1' : '0';
+    document.getElementById('stat-inspections-sub').textContent = hasData ? 'In progress' : 'None in progress';
+  } catch(e) {
+    document.getElementById('stat-inspections').textContent = '0';
+  }
+
+  // Compliance alerts — pull from Supabase
+  fetch('https://ayijphyqqojyzclknrra.supabase.co/rest/v1/sites?select=id,next_visit_due', {
+    headers: {
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aWpwaHlxcW9qeXpjbGtucnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5NjYwMDIsImV4cCI6MjA1ODU0MjAwMn0.wMfpjBH_LrxEWMhFsrFe8wPHQJr_dPG8TJc6hmhT1KE',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aWpwaHlxcW9qeXpjbGtucnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5NjYwMDIsImV4cCI6MjA1ODU0MjAwMn0.wMfpjBH_LrxEWMhFsrFe8wPHQJr_dPG8TJc6hmhT1KE'
+    }
+  })
+  .then(r => r.json())
+  .then(sites => {
+    const today = new Date();
+    const overdue = (sites || []).filter(s => s.next_visit_due && new Date(s.next_visit_due) < today).length;
+    const dueSoon = (sites || []).filter(s => {
+      if (!s.next_visit_due) return false;
+      const diff = (new Date(s.next_visit_due) - today) / (1000*60*60*24);
+      return diff >= 0 && diff <= 7;
+    }).length;
+    document.getElementById('stat-overdue').textContent = overdue;
+    document.getElementById('stat-overdue-sub').textContent = overdue > 0 ? overdue + ' overdue · ' + dueSoon + ' due soon' : dueSoon + ' due within 7 days';
+    if (overdue > 0) {
+      const card = document.querySelector('#stat-overdue').closest('.stat-card');
+      card.style.borderColor = 'rgba(248,113,113,0.4)';
+    }
+  })
+  .catch(() => {
+    document.getElementById('stat-overdue').textContent = '—';
+    document.getElementById('stat-overdue-sub').textContent = 'Visit compliance app';
+  });
+}
+</script>
+</body>
+</html>
