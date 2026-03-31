@@ -1418,10 +1418,7 @@ function esc(str) {
 
 // Check API key on load
 window.addEventListener('load', () => {
-  if (!getApiKey()) {
-    const key = prompt('Enter your Anthropic API key (sk-ant-...):');
-    if (key && key.startsWith('sk-ant-')) localStorage.setItem('eap_api_key', key);
-  }
+  // API key handled via console settings
 });
 </script>
 
@@ -2476,8 +2473,19 @@ function consoleLogin() {
   // Also set job scanner current user
   if (typeof js_currentUser !== "undefined") currentUser = name;
   if (typeof js_weekData !== "undefined") js_weekData = JSON.parse(localStorage.getItem("eap_week_" + name) || "{}");
-  if (typeof buildTabs === "function") buildTabs();
-  if (typeof renderDay === "function") renderDay("Monday");
+  js_currentUser = name;
+  js_weekData = JSON.parse(localStorage.getItem("eap_week_" + name) || "{}");
+  if (typeof buildTabs === "function") { buildTabs(); renderDay("Monday"); }
+  // Show API key banner if not set
+  setTimeout(() => {
+    if (!localStorage.getItem("eap_api_key")) {
+      const b = document.createElement("div");
+      b.id = "apiKeyBanner";
+      b.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid #e63329;border-radius:16px;padding:16px 20px;z-index:500;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.5);";
+      b.innerHTML = "<div style=\"font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;\">🔑 API Key Required</div><div style=\"font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:12px;\">Needed for Job Scanner AI features</div><input id=\"bannerKey\" type=\"password\" placeholder=\"sk-ant-api03-...\" style=\"width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:13px;margin-bottom:10px;outline:none;\"><div style=\"display:flex;gap:8px;\"><button onclick=\"var k=document.getElementById('bannerKey').value.trim();if(k.startsWith('sk-ant-')){localStorage.setItem('eap_api_key',k);document.getElementById('apiKeyBanner').remove();}else{document.getElementById('bannerKey').style.borderColor='#f87171';}\" style=\"flex:2;padding:10px;border-radius:10px;border:none;background:#e63329;color:#fff;font-weight:700;cursor:pointer;\">Save Key</button><button onclick=\"document.getElementById('apiKeyBanner').remove()\" style=\"flex:1;padding:10px;border-radius:10px;border:none;background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;\">Later</button></div>";
+      document.body.appendChild(b);
+    }
+  }, 500);
 }
 
 function consoleLogout() {
@@ -3253,10 +3261,7 @@ function esc(str) {
 
 // Check API key on load
 window.addEventListener('load', () => {
-  if (!getApiKey()) {
-    const key = prompt('Enter your Anthropic API key (sk-ant-...):');
-    if (key && key.startsWith('sk-ant-')) localStorage.setItem('eap_api_key', key);
-  }
+  // API key handled via console settings
 });
 
 
@@ -3624,12 +3629,11 @@ window.addEventListener('load', () => {
 // INIT
 // ═══════════════════════════════════════════════════════
 window.addEventListener("load", () => {
-  // Check if already logged into job scanner - reuse that session
-  const jsUsers = JSON.parse(localStorage.getItem("eap_users") || "{}");
-  // Pre-fill name if only one user
-  const names = Object.keys(jsUsers);
+  // Pre-fill name if only one console user
+  const consoleUsers = JSON.parse(localStorage.getItem("eap_console_users") || "{}");
+  const names = Object.keys(consoleUsers);
   if (names.length === 1) document.getElementById("clName").value = names[0];
-  
+
   // Init termite date defaults
   const today = new Date().toISOString().slice(0,10);
   const idEl = document.getElementById("inspDate");
